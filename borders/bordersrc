@@ -1,0 +1,11 @@
+#!/bin/bash
+
+options=(
+    style=round
+    width=6.0
+    hidpi=off
+    active_color=0xff98BB6C  # Kanagawa fujiWhite
+    inactive_color=0xff54546D # Kanagawa sumiInk4
+)
+
+borders "${options[@]}"
