@@ -4,47 +4,27 @@ return {
     -- event = 'BufWritePre', -- uncomment for format on save
     opts = require "configs.conform",
   },
-  
-  -- LSP Configuration
+  -- These are some examples, uncomment them if you want to see them work!
   {
     "neovim/nvim-lspconfig",
     config = function()
       require "configs.lspconfig"
     end,
   },
-
-  -- C# Support
-  {
-    "iabdelkareem/csharp.nvim",
-    dependencies = {
-      "williamboman/mason.nvim", -- Required
-      "mfussenegger/nvim-dap",
-      "Tastyep/structlog.nvim", -- Optional, but recommended for debugging
-    },
-    config = function()
-      require("csharp").setup()
-    end,
-  },
-
-  -- Additional C# tools
-  {
-    "jlcrochet/vim-razor",
-    ft = "razor",
-  },
    
-  -- Rust configuration (keeping your existing setup)
   {
     'mrcjkb/rustaceanvim',
-    version = '^5',
-    lazy = false,
+    version = '^5', -- Recommended
+    lazy = false, -- This plugin is already lazy
     ft = "rust",
     config = function ()
-      local mason_path = vim.fn.stdpath("data") .. "/mason"
-      local extension_path = mason_path .. "/packages/codelldb/extension/"
-      local codelldb_path = extension_path .. "adapter/codelldb"
-      local liblldb_path = extension_path .. "lldb/lib/liblldb.dylib"
-      -- If you are on Linux, replace the line above with the line below:
-      -- local liblldb_path = extension_path .. "lldb/lib/liblldb.so"
+    local mason_path = vim.fn.stdpath("data") .. "/mason"
+    local extension_path = mason_path .. "/packages/codelldb/extension/"
+    local codelldb_path = extension_path .. "adapter/codelldb"
+    local liblldb_path = extension_path .. "lldb/lib/liblldb.dylib"
+    local codelldb_path = extension_path .. "adapter/codelldb"
+	-- If you are on Linux, replace the line above with the line below:
+	-- local liblldb_path = extension_path .. "lldb/lib/liblldb.so"
       local cfg = require('rustaceanvim.config')
 
       vim.g.rustaceanvim = {
@@ -63,31 +43,10 @@ return {
     end
   },
 
-  -- DAP Configuration
   {
     'mfussenegger/nvim-dap',
     config = function()
-      local dap, dapui = require("dap"), require("dapui")
-      
-      -- C# DAP configuration
-      dap.adapters.coreclr = {
-        type = 'executable',
-        command = vim.fn.stdpath("data") .. "/mason/packages/netcoredbg/netcoredbg",
-        args = {'--interpreter=vscode'}
-      }
-
-      dap.configurations.cs = {
-        {
-          type = "coreclr",
-          name = "launch - netcoredbg",
-          request = "launch",
-          program = function()
-            return vim.fn.input('Path to dll: ', vim.fn.getcwd() .. '/bin/Debug/', 'file')
-          end,
-        },
-      }
-
-      -- Your existing DAP UI configuration
+			local dap, dapui = require("dap"), require("dapui")
       dap.listeners.before.attach.dapui_config = function()
         dapui.open()
       end
@@ -100,18 +59,17 @@ return {
       dap.listeners.before.event_exited.dapui_config = function()
         dapui.close()
       end
-    end,
+		end,
   },
 
   {
     'rcarriga/nvim-dap-ui', 
     dependencies = {"mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"},
     config = function()
-      require("dapui").setup()
-    end,
+			require("dapui").setup()
+		end,
   },
 
-  -- Existing plugins (keeping your setup)
   {
     'saecki/crates.nvim',
     ft = {"toml"},
@@ -128,7 +86,6 @@ return {
       })
     end
   },
-
   {
     "kdheepak/lazygit.nvim",
     lazy = true,
@@ -138,7 +95,7 @@ return {
     },
   },
 
-  -- Telescope
+  -- 🧭 Telescope – fuzzy finder
   {
     "nvim-telescope/telescope.nvim",
     dependencies = { "nvim-lua/plenary.nvim" },
@@ -151,7 +108,7 @@ return {
     end,
   },
 
-  -- Harpoon 2
+  -- 🎯 Harpoon 2 with Telescope integration
   {
     "ThePrimeagen/harpoon",
     branch = "harpoon2",
@@ -200,21 +157,99 @@ return {
       },
     },
   },
-
-  -- Code folding
   {
     "kevinhwang91/nvim-ufo",
     dependencies = { "kevinhwang91/promise-async" },
     config = function()
-      vim.o.foldcolumn = "1"
-      vim.o.foldlevel = 99
+      vim.o.foldcolumn = "1" -- '0' is not bad
+      vim.o.foldlevel = 99 -- Using ufo provider need a large value, feel free to decrease the value
       vim.o.foldlevelstart = 99
       vim.o.foldenable = true
 
+      -- Set the provider to use LSP and fallback to treesitter
       require("ufo").setup({
         provider_selector = function(bufnr, filetype, buftype)
+          -- Skip folding for certain buffer types and filetypes that cause issues
+          local skip_ft = {
+            "help",
+            "alpha",
+            "dashboard", 
+            "neo-tree",
+            "Trouble",
+            "lazy",
+            "mason",
+            "notify",
+            "toggleterm",
+            "lazyterm",
+            "NvimTree",
+            "telescope",
+            "TelescopePrompt",
+            "TelescopeResults", 
+            "dapui_watches",
+            "dapui_breakpoints",
+            "dapui_scopes", 
+            "dapui_console",
+            "dapui_stacks",
+            "dap-repl",
+            "terminal",
+            "",
+          }
+
+          local skip_bt = {
+            "terminal",
+            "nofile", 
+            "quickfix",
+            "prompt",
+            "help",
+            "acwrite",
+          }
+
+          -- Check if we should skip this buffer
+          if vim.tbl_contains(skip_ft, filetype) or vim.tbl_contains(skip_bt, buftype) then
+            return ""
+          end
+
+          -- For normal files, use LSP as main provider and treesitter as fallback
+          -- nvim-ufo only supports max 2 providers: main and fallback
           return { "lsp", "treesitter" }
         end,
+
+        -- Add fold preview configuration  
+        fold_virt_text_handler = function(virtText, lnum, endLnum, width, truncate)
+          local newVirtText = {}
+          local suffix = (" 󰁂 %d "):format(endLnum - lnum)
+          local sufWidth = vim.fn.strdisplaywidth(suffix)
+          local targetWidth = width - sufWidth
+          local curWidth = 0
+          
+          for _, chunk in ipairs(virtText) do
+            local chunkText = chunk[1]
+            local chunkWidth = vim.fn.strdisplaywidth(chunkText)
+            if targetWidth > curWidth + chunkWidth then
+              table.insert(newVirtText, chunk)
+            else
+              chunkText = truncate(chunkText, targetWidth - curWidth)
+              local hlGroup = chunk[2]
+              table.insert(newVirtText, { chunkText, hlGroup })
+              chunkWidth = vim.fn.strdisplaywidth(chunkText)
+              if curWidth + chunkWidth < targetWidth then
+                suffix = suffix .. (" "):rep(targetWidth - curWidth - chunkWidth)
+              end
+              break
+            end
+            curWidth = curWidth + chunkWidth
+          end
+          
+          table.insert(newVirtText, { suffix, "MoreMsg" })
+          return newVirtText
+        end,
+
+        -- Close all folds on buffer enter to avoid issues
+        close_fold_kinds_for_ft = {
+          default = { "imports", "comment" },
+          json = { "array" },
+          c = { "comment", "region" },
+        },
       })
     end,
   },
