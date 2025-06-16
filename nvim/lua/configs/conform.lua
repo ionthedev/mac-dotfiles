@@ -1,6 +1,8 @@
 local options = {
   formatters_by_ft = {
     lua = { "stylua" },
+    cs = { "csharpier" }, -- C# formatter
+    gdscript = { "gdformat" },
     -- css = { "prettier" },
     -- html = { "prettier" },
   },

@@ -4,27 +4,47 @@ return {
     -- event = 'BufWritePre', -- uncomment for format on save
     opts = require "configs.conform",
   },
-  -- These are some examples, uncomment them if you want to see them work!
+  
+  -- LSP Configuration
   {
     "neovim/nvim-lspconfig",
     config = function()
       require "configs.lspconfig"
     end,
   },
+
+  -- C# Support
+  {
+    "iabdelkareem/csharp.nvim",
+    dependencies = {
+      "williamboman/mason.nvim", -- Required
+      "mfussenegger/nvim-dap",
+      "Tastyep/structlog.nvim", -- Optional, but recommended for debugging
+    },
+    config = function()
+      require("csharp").setup()
+    end,
+  },
+
+  -- Additional C# tools
+  {
+    "jlcrochet/vim-razor",
+    ft = "razor",
+  },
    
+  -- Rust configuration (keeping your existing setup)
   {
     'mrcjkb/rustaceanvim',
-    version = '^5', -- Recommended
-    lazy = false, -- This plugin is already lazy
+    version = '^5',
+    lazy = false,
     ft = "rust",
     config = function ()
-    local mason_path = vim.fn.stdpath("data") .. "/mason"
-    local extension_path = mason_path .. "/packages/codelldb/extension/"
-    local codelldb_path = extension_path .. "adapter/codelldb"
-    local liblldb_path = extension_path .. "lldb/lib/liblldb.dylib"
-    local codelldb_path = extension_path .. "adapter/codelldb"
-	-- If you are on Linux, replace the line above with the line below:
-	-- local liblldb_path = extension_path .. "lldb/lib/liblldb.so"
+      local mason_path = vim.fn.stdpath("data") .. "/mason"
+      local extension_path = mason_path .. "/packages/codelldb/extension/"
+      local codelldb_path = extension_path .. "adapter/codelldb"
+      local liblldb_path = extension_path .. "lldb/lib/liblldb.dylib"
+      -- If you are on Linux, replace the line above with the line below:
+      -- local liblldb_path = extension_path .. "lldb/lib/liblldb.so"
       local cfg = require('rustaceanvim.config')
 
       vim.g.rustaceanvim = {
@@ -43,10 +63,31 @@ return {
     end
   },
 
+  -- DAP Configuration
   {
     'mfussenegger/nvim-dap',
     config = function()
-			local dap, dapui = require("dap"), require("dapui")
+      local dap, dapui = require("dap"), require("dapui")
+      
+      -- C# DAP configuration
+      dap.adapters.coreclr = {
+        type = 'executable',
+        command = vim.fn.stdpath("data") .. "/mason/packages/netcoredbg/netcoredbg",
+        args = {'--interpreter=vscode'}
+      }
+
+      dap.configurations.cs = {
+        {
+          type = "coreclr",
+          name = "launch - netcoredbg",
+          request = "launch",
+          program = function()
+            return vim.fn.input('Path to dll: ', vim.fn.getcwd() .. '/bin/Debug/', 'file')
+          end,
+        },
+      }
+
+      -- Your existing DAP UI configuration
       dap.listeners.before.attach.dapui_config = function()
         dapui.open()
       end
@@ -59,17 +100,18 @@ return {
       dap.listeners.before.event_exited.dapui_config = function()
         dapui.close()
       end
-		end,
+    end,
   },
 
   {
     'rcarriga/nvim-dap-ui', 
     dependencies = {"mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"},
     config = function()
-			require("dapui").setup()
-		end,
+      require("dapui").setup()
+    end,
   },
 
+  -- Existing plugins (keeping your setup)
   {
     'saecki/crates.nvim',
     ft = {"toml"},
@@ -86,6 +128,7 @@ return {
       })
     end
   },
+
   {
     "kdheepak/lazygit.nvim",
     lazy = true,
@@ -95,7 +138,7 @@ return {
     },
   },
 
-  -- 🧭 Telescope – fuzzy finder
+  -- Telescope
   {
     "nvim-telescope/telescope.nvim",
     dependencies = { "nvim-lua/plenary.nvim" },
@@ -108,7 +151,7 @@ return {
     end,
   },
 
-  -- 🎯 Harpoon 2 with Telescope integration
+  -- Harpoon 2
   {
     "ThePrimeagen/harpoon",
     branch = "harpoon2",
@@ -157,16 +200,17 @@ return {
       },
     },
   },
+
+  -- Code folding
   {
     "kevinhwang91/nvim-ufo",
     dependencies = { "kevinhwang91/promise-async" },
     config = function()
-      vim.o.foldcolumn = "1" -- '0' is not bad
-      vim.o.foldlevel = 99 -- Using ufo provider need a large value, feel free to decrease the value
+      vim.o.foldcolumn = "1"
+      vim.o.foldlevel = 99
       vim.o.foldlevelstart = 99
       vim.o.foldenable = true
 
-      -- Set the provider to use LSP and fallback to treesitter
       require("ufo").setup({
         provider_selector = function(bufnr, filetype, buftype)
           return { "lsp", "treesitter" }
